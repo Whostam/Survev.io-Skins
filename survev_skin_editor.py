@@ -79,7 +79,7 @@ with st.sidebar:
         ftype = st.selectbox(f"{name} fill type", ["Solid","Linear","Radial"], key=f"{name}_fill")
         c1 = st.color_picker(f"{name} primary", def1, key=f"{name}_c1")
         c2 = c1
-        if ftype!="Solid":
+        if ftype != "Solid":
             c2 = st.color_picker(f"{name} secondary", def2, key=f"{name}_c2")
 
         pat = st.selectbox(f"{name} pattern",
@@ -88,9 +88,9 @@ with st.sidebar:
 
         pat_color = None
         pat_file  = None
-        if pat!="None" and pat!="Custom":
+        if pat != "None" and pat != "Custom":
             pat_color = st.color_picker(f"{name} pattern color", def2, key=f"{name}_pc")
-        if pat=="Custom":
+        if pat == "Custom":
             pat_file = st.file_uploader(f"{name} tile PNG", type="png", key=f"{name}_up")
 
         return ftype, c1, c2, pat, pat_color, pat_file
@@ -141,29 +141,32 @@ for ftype, c1, c2, pat, pc, up, center, r in parts:
         pattern = make_checkerboard(2*r, pc)
     elif pat == "Custom":
         if up:
-            # tile the uploaded image across the circle
+            # Tile uploaded image with scaling
             tile = Image.open(up).convert("RGBA")
-            tw, th = tile.size
-            pattern = Image.new("RGBA", (2*r, 2*r), (0,0,0,0))
-            for y in range(0, 2*r, th):
-                for x in range(0, 2*r, tw):
-                    pattern.paste(tile, (x, y), tile)
+            ow, oh = tile.size
+            diameter = 2 * r
+            new_w = max(1, int(diameter * 0.2))
+            new_h = max(1, int(new_w * (oh/ow)))
+            tile_small = tile.resize((new_w, new_h), Image.Resampling.LANCZOS)
+            pattern = Image.new("RGBA", (diameter, diameter), (0,0,0,0))
+            for y in range(0, diameter, new_h):
+                for x in range(0, diameter, new_w):
+                    pattern.paste(tile_small, (x, y), tile_small)
         else:
             st.warning("Custom pattern selected but no file uploaded; skipping.")
 
     if pattern:
-        # simply overlay the transparent pattern on the fill
         fill_img.paste(pattern, (0,0), pattern)
 
-    # 3) circle mask for pasting to canvas
+    # 3) Always build circle mask
     circle_mask = Image.new("L", (2*r,2*r), 0)
-    dm = ImageDraw.Draw(circle_mask)
-    dm.ellipse((0,0,2*r,2*r), fill=255)
+    cm = ImageDraw.Draw(circle_mask)
+    cm.ellipse((0,0,2*r,2*r), fill=255)
 
     # 4) Paste into canvas
     canvas.paste(fill_img, (center[0]-r, center[1]-r), circle_mask)
 
-    # 5) Outline
+    # 5) Draw outline
     ImageDraw.Draw(canvas).ellipse(
         (center[0]-r, center[1]-r, center[0]+r, center[1]+r),
         outline=outline_color, width=outline_width
