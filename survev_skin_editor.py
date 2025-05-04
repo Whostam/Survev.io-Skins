@@ -82,19 +82,18 @@ randomize = st.sidebar.button("🎲 Randomize Skin")
 
 def init_random():
     parts = ["Backpack","Body","Hands"]
-    for name in parts:
-        if randomize:
+    if randomize:
+        for name in parts:
             st.session_state[f"{name}_fill"]    = random.choice(["Solid","Linear","Radial"])
             st.session_state[f"{name}_c1"]      = random_color()
             st.session_state[f"{name}_c2"]      = random_color()
-            st.session_state[f"{name}_pat"]     = random.choice(["None","Stripes","Spots","Diagonal Stripes","Checkerboard","Custom"])
+            st.session_state[f"{name}_pat"]     = random.choice(["None","Stripes","Spots","Diagonal Stripes","Checkerboard"])
             st.session_state[f"{name}_pc"]      = random_color()
             st.session_state[f"{name}_stripe_w"] = random.randint(5,50)
             st.session_state[f"{name}_dot_r"]    = random.randint(5,30)
             st.session_state[f"{name}_spacing"]  = random.randint(20,100)
             st.session_state[f"{name}_diag_w"]   = random.randint(5,50)
             st.session_state[f"{name}_block"]    = random.randint(20,80)
-            st.session_state[f"{name}_up"]       = None
 init_random()
 
 with st.sidebar:
@@ -196,16 +195,26 @@ if bg:
     canvas = Image.alpha_composite(bg, canvas)
 
 # Preview size
-data_res = st.selectbox("Preview size", [320, 400, 512], index=0)
-preview = canvas.resize((data_res,data_res), Image.Resampling.LANCZOS)
+preview_size = st.selectbox("Preview size", [320,400,512], index=0)
+preview = canvas.resize((preview_size,preview_size), Image.Resampling.LANCZOS)
 st.subheader("Preview")
 st.image(preview)
 
 # Download options
-down_res = st.selectbox("Download resolution", [256,512,1024], index=1)
-down_fmt = st.selectbox("File format", ["PNG","JPEG"], index=0)
-out = canvas.resize((down_res,down_res), Image.Resampling.LANCZOS)
-buf = io.BytesIO()
-out.save(buf, format=down_fmt)
-buf.seek(0)
-st.download_button("Download Skin", data=buf, file_name=f"survev_skin.{down_fmt.lower()}", mime=f"image/{down_fmt.lower()}")
+download_res = st.selectbox("Download resolution", [256,512,1024], index=1)
+download_fmt = st.selectbox("File format", ["PNG","JPEG"], index=0)
+out = canvas.resize((download_res,download_res), Image.Resampling.LANCZOS)
+
+# Convert to RGB if JPEG selected
+download_buf = io.BytesIO()
+if download_fmt == "JPEG":
+    out.convert("RGB").save(download_buf, format="JPEG")
+else:
+    out.save(download_buf, format="PNG")
+download_buf.seek(0)
+st.download_button(
+    "Download Skin",
+    data=download_buf,
+    file_name=f"survev_skin.{download_fmt.lower()}",
+    mime=f"image/{download_fmt.lower()}"
+)
