@@ -58,12 +58,14 @@ st.image(display_img)
 
 import io
 
-# --- Prepare valid PNG in memory ---
+# Resize final image for download
+download_img = img.resize((512, 512), Image.Resampling.LANCZOS)
+
+# Save valid PNG to memory
 buffer = io.BytesIO()
 download_img.save(buffer, format="PNG")
 buffer.seek(0)
 
-# --- Download button with valid PNG ---
 st.download_button(
     "Download Skin",
     data=buffer,
