@@ -5,7 +5,7 @@ import io, random, json, base64
 # Page config
 st.set_page_config(page_title="Survev.io Skin Editor", layout="wide")
 st.title("🎨 Survev.io Skin Editor")
-st.write("Use the sidebar (or the 🎲 Randomize button) to customize or auto-generate a skin.")
+st.write("Use the sidebar (or the 🎲 Randomize button) to customize or auto‑generate a skin.")
 
 # Utility: random hex color
 def random_color():
@@ -166,11 +166,14 @@ for data, center, r in [
             for x in range(0, dia, nw):
                 pattern.paste(tile_small, (x,y), tile_small)
 
-    # Apply pattern with opacity
+        # Apply pattern with opacity
     if pattern:
-        mask_img = pattern.split()[3].point(lambda px: int(px * alpha))
-        pattern.putalpha(mask_img)
-        fill_img = Image.alpha_composite(fill_img, pattern)
+        # adjust alpha channel based on opacity slider
+        orig_alpha = pattern.split()[3]
+        alpha_mask = orig_alpha.point(lambda px: int(px * alpha))
+        pattern.putalpha(alpha_mask)
+        # paste the pattern onto the fill, preserving gradient where transparent
+        fill_img.paste(pattern, (0, 0), pattern)
 
     # Paste to canvas
     mask = Image.new("L", (2*r, 2*r), 0)
