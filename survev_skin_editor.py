@@ -82,7 +82,6 @@ def init_random():
             st.session_state[f"{name}_spacing"]  = random.randint(20,100)
             st.session_state[f"{name}_diag_w"]   = random.randint(5,50)
             st.session_state[f"{name}_block"]    = random.randint(20,80)
-            st.session_state[f"{name}_up"]       = None
 init_random()
 
 with st.sidebar:
