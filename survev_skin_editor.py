@@ -89,11 +89,11 @@ with st.sidebar:
         )
         pat_color = None
         pat_file  = None
-        if pat != "None":
-            if pat != "Custom":
-                pat_color = st.color_picker("Pattern color", def2, key=f"{name}_pc")
-            else:
-                pat_file = st.file_uploader("Upload tile PNG", type="png", key=f"{name}_up")
+        if pat != "None" and pat != "Custom":
+            pat_color = st.color_picker("Pattern color", def2, key=f"{name}_pc")
+        if pat == "Custom":
+            pat_file = st.file_uploader("Upload tile PNG", type="png", key=f"{name}_up")
+
         return ftype, c1, c2, pat, pat_color, pat_file
 
     bp_fill, bp_c1, bp_c2, bp_pat, bp_pc, bp_up = part_ui("Backpack", "#A0522D", "#8B4513")
@@ -127,10 +127,10 @@ parts = [
 ]
 
 for ftype, c1, c2, pat, pc, up, center, r in parts:
-    # 1) base fill
-    fill_img = get_fill_image(ftype, c1, c2, 2*r)
+    # 1) Base fill as RGBA
+    fill_img = get_fill_image(ftype, c1, c2, 2*r).convert("RGBA")
 
-    # 2) pattern overlay
+    # 2) Pattern overlay
     pattern = None
     if pat == "Stripes":
         pattern = make_stripes(2*r, pc)
@@ -140,33 +140,36 @@ for ftype, c1, c2, pat, pc, up, center, r in parts:
         pattern = make_diagonal_stripes(2*r, pc)
     elif pat == "Checkerboard":
         pattern = make_checkerboard(2*r, pc)
-    elif pat == "Custom" and up:
-        pattern = Image.open(up).convert("RGBA") \
-                       .resize((2*r,2*r), Image.Resampling.LANCZOS)
     elif pat == "Custom":
-        st.warning(f"{name} custom pattern: no file uploaded, skipping.")
+        if up:
+            pattern = (
+                Image.open(up)
+                     .convert("RGBA")
+                     .resize((2*r,2*r), Image.Resampling.LANCZOS)
+            )
+        else:
+            st.warning("Custom pattern selected but no file uploaded; skipping pattern.")
 
     if pattern:
-        # mask to circle and composite
-        mask = Image.new("L", (2*r,2*r), 0)
-        ImageDraw.Draw(mask).ellipse((0,0,2*r,2*r), fill=255)
-        fill_img = Image.composite(pattern, fill_img, mask)
+        pat_mask = Image.new("L", (2*r,2*r), 0)
+        ImageDraw.Draw(pat_mask).ellipse((0,0,2*r,2*r), fill=255)
+        fill_img = Image.composite(pattern, fill_img, pat_mask)
 
-    # 3) circle mask (always)
-    mask = Image.new("L", (2*r,2*r), 0)
-    draw = ImageDraw.Draw(mask)
-    draw.ellipse((0,0,2*r,2*r), fill=255)
+    # 3) Always build circle mask
+    circle_mask = Image.new("L", (2*r,2*r), 0)
+    cm = ImageDraw.Draw(circle_mask)
+    cm.ellipse((0,0,2*r,2*r), fill=255)
 
-    # 4) paste
-    canvas.paste(fill_img, (center[0]-r, center[1]-r), mask)
+    # 4) Paste onto canvas
+    canvas.paste(fill_img, (center[0]-r, center[1]-r), circle_mask)
 
-    # 5) outline
+    # 5) Draw outline
     ImageDraw.Draw(canvas).ellipse(
         (center[0]-r, center[1]-r, center[0]+r, center[1]+r),
         outline=outline_color, width=outline_width
     )
 
-# 6) composite background under
+# 6) Composite background below
 if bg:
     canvas = Image.alpha_composite(bg, canvas)
 
