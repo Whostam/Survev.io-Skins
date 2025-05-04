@@ -40,59 +40,58 @@ def get_fill_image(ftype, c1, c2, size):
         return make_linear_gradient(size, c1, c2)
     return make_radial_gradient(size, c1, c2)
 
-# ─── Pattern generators (transparent bg) ─────────────────────────────────
+# ─── Built-in pattern generators (transparent bg) ─────────────────────────
 def make_stripes(size, color, stripe_w=20):
-    tile = Image.new("RGBA", (size,size), (0,0,0,0))
-    draw = ImageDraw.Draw(tile)
+    pat = Image.new("RGBA", (size,size), (0,0,0,0))
+    d = ImageDraw.Draw(pat)
     for x in range(0, size, stripe_w*2):
-        draw.rectangle([x, 0, x+stripe_w, size], fill=color)
-    return tile
+        d.rectangle([x,0,x+stripe_w,size], fill=color)
+    return pat
 
 def make_spots(size, color, dot_r=30, spacing=60):
-    tile = Image.new("RGBA", (size,size), (0,0,0,0))
-    draw = ImageDraw.Draw(tile)
+    pat = Image.new("RGBA", (size,size), (0,0,0,0))
+    d = ImageDraw.Draw(pat)
     for y in range(0, size, spacing):
         for x in range(0, size, spacing):
-            draw.ellipse([x, y, x+dot_r, y+dot_r], fill=color)
-    return tile
+            d.ellipse([x,y,x+dot_r,y+dot_r], fill=color)
+    return pat
 
 def make_diagonal_stripes(size, color, stripe_w=20):
-    tile = Image.new("RGBA", (size,size), (0,0,0,0))
-    draw = ImageDraw.Draw(tile)
+    pat = Image.new("RGBA", (size,size), (0,0,0,0))
+    d = ImageDraw.Draw(pat)
     for x in range(-size, size, stripe_w*2):
-        draw.line([(x, size), (x+size, 0)], fill=color, width=stripe_w)
-    return tile
+        d.line([(x,size),(x+size,0)], fill=color, width=stripe_w)
+    return pat
 
 def make_checkerboard(size, color, block=50):
-    tile = Image.new("RGBA", (size,size), (0,0,0,0))
-    draw = ImageDraw.Draw(tile)
+    pat = Image.new("RGBA", (size,size), (0,0,0,0))
+    d = ImageDraw.Draw(pat)
     for y in range(0, size, block):
         for x in range(0, size, block):
-            if ((x//block)+(y//block)) % 2 == 0:
-                draw.rectangle([x,y,x+block,y+block], fill=color)
-    return tile
+            if ((x//block)+(y//block))%2 == 0:
+                d.rectangle([x,y,x+block,y+block], fill=color)
+    return pat
 
 # ─── Sidebar UI ───────────────────────────────────────────────────────────
 with st.sidebar:
     def part_ui(name, def1, def2):
         st.header(name)
-        ftype = st.selectbox("Fill type", ["Solid","Linear","Radial"], key=f"{name}_fill")
-        c1 = st.color_picker("Primary color", def1, key=f"{name}_c1")
+        ftype = st.selectbox(f"{name} fill type", ["Solid","Linear","Radial"], key=f"{name}_fill")
+        c1 = st.color_picker(f"{name} primary", def1, key=f"{name}_c1")
         c2 = c1
-        if ftype != "Solid":
-            c2 = st.color_picker("Secondary color", def2, key=f"{name}_c2")
+        if ftype!="Solid":
+            c2 = st.color_picker(f"{name} secondary", def2, key=f"{name}_c2")
 
-        pat = st.selectbox(
-            "Pattern",
-            ["None","Stripes","Spots","Diagonal Stripes","Checkerboard","Custom"],
-            key=f"{name}_pat"
-        )
+        pat = st.selectbox(f"{name} pattern",
+                           ["None","Stripes","Spots","Diagonal Stripes","Checkerboard","Custom"],
+                           key=f"{name}_pat")
+
         pat_color = None
         pat_file  = None
-        if pat != "None" and pat != "Custom":
-            pat_color = st.color_picker("Pattern color", def2, key=f"{name}_pc")
-        if pat == "Custom":
-            pat_file = st.file_uploader("Upload tile PNG", type="png", key=f"{name}_up")
+        if pat!="None" and pat!="Custom":
+            pat_color = st.color_picker(f"{name} pattern color", def2, key=f"{name}_pc")
+        if pat=="Custom":
+            pat_file = st.file_uploader(f"{name} tile PNG", type="png", key=f"{name}_up")
 
         return ftype, c1, c2, pat, pat_color, pat_file
 
@@ -127,7 +126,7 @@ parts = [
 ]
 
 for ftype, c1, c2, pat, pc, up, center, r in parts:
-    # 1) Base fill as RGBA
+    # 1) Base fill (RGBA)
     fill_img = get_fill_image(ftype, c1, c2, 2*r).convert("RGBA")
 
     # 2) Pattern overlay
@@ -142,34 +141,35 @@ for ftype, c1, c2, pat, pc, up, center, r in parts:
         pattern = make_checkerboard(2*r, pc)
     elif pat == "Custom":
         if up:
-            pattern = (
-                Image.open(up)
-                     .convert("RGBA")
-                     .resize((2*r,2*r), Image.Resampling.LANCZOS)
-            )
+            # tile the uploaded image across the circle
+            tile = Image.open(up).convert("RGBA")
+            tw, th = tile.size
+            pattern = Image.new("RGBA", (2*r, 2*r), (0,0,0,0))
+            for y in range(0, 2*r, th):
+                for x in range(0, 2*r, tw):
+                    pattern.paste(tile, (x, y), tile)
         else:
-            st.warning("Custom pattern selected but no file uploaded; skipping pattern.")
+            st.warning("Custom pattern selected but no file uploaded; skipping.")
 
     if pattern:
-        pat_mask = Image.new("L", (2*r,2*r), 0)
-        ImageDraw.Draw(pat_mask).ellipse((0,0,2*r,2*r), fill=255)
-        fill_img = Image.composite(pattern, fill_img, pat_mask)
+        # simply overlay the transparent pattern on the fill
+        fill_img.paste(pattern, (0,0), pattern)
 
-    # 3) Always build circle mask
+    # 3) circle mask for pasting to canvas
     circle_mask = Image.new("L", (2*r,2*r), 0)
-    cm = ImageDraw.Draw(circle_mask)
-    cm.ellipse((0,0,2*r,2*r), fill=255)
+    dm = ImageDraw.Draw(circle_mask)
+    dm.ellipse((0,0,2*r,2*r), fill=255)
 
-    # 4) Paste onto canvas
+    # 4) Paste into canvas
     canvas.paste(fill_img, (center[0]-r, center[1]-r), circle_mask)
 
-    # 5) Draw outline
+    # 5) Outline
     ImageDraw.Draw(canvas).ellipse(
         (center[0]-r, center[1]-r, center[0]+r, center[1]+r),
         outline=outline_color, width=outline_width
     )
 
-# 6) Composite background below
+# ─── Composite background underneath ────────────────────────────────────────
 if bg:
     canvas = Image.alpha_composite(bg, canvas)
 
