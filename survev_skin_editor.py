@@ -2,71 +2,12 @@ import streamlit as st
 from PIL import Image, ImageDraw
 import io, random, json, base64
 
-# ─── Page config ────────────────────────────────────────────────────────────
+# Page config
 st.set_page_config(page_title="Survev.io Skin Editor", layout="wide")
-
-# ─── Theme toggle: Light / Dark mode ───────────────────────────────────────
-dark_mode = st.sidebar.checkbox("Dark mode", value=False, help="Toggle between light and dark mode")
-if dark_mode:
-    page_bg    = "#2e2e2e"
-    text_col   = "#FFFFFF"
-    sidebar_bg = "#2e2e2e"
-    button_bg  = "#3a3a3a"
-else:
-    page_bg    = "#FFFFFF"
-    text_col   = "#000000"
-    sidebar_bg = "#FFFFFF"
-    button_bg  = "#e0e0e0"
-
-# ─── Global CSS overrides ───────────────────────────────────────────────────
-st.markdown(
-    f"""
-    <style>
-    /* Main app background and text */
-    [data-testid="stAppViewContainer"] {{
-        background-color: {page_bg} !important;
-        color: {text_col} !important;
-    }}
-    /* Sidebar background and text */
-    [data-testid="stSidebar"] {{
-        background-color: {sidebar_bg} !important;
-        color: {text_col} !important;
-    }}
-    [data-testid="stSidebar"] * {{
-        color: {text_col} !important;
-    }}
-    /* Override markdown and text components */
-    .css-18e3th9, .stText, .stMarkdown {{
-        color: {text_col} !important;
-    }}
-    /* Header / Toolbar background */
-    header, [data-testid="stToolbar"] {{
-        background-color: {sidebar_bg} !important;
-    }}
-    /* Button styling */
-    button, .stButton>button {{
-        background-color: {button_bg} !important;
-        color: {text_col} !important;
-        border-color: {text_col} !important;
-    }}
-    button:hover, .stButton>button:hover {{
-        background-color: {page_bg}33 !important;
-    }}
-    /* Dropdown menus */
-    div[role="listbox"] {{
-        background-color: {sidebar_bg} !important;
-        color: {text_col} !important;
-    }}
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-# ─── Title & Description ───────────────────────────────────────────────────
 st.title("🎨 Survev.io Skin Editor")
 st.write("Use the sidebar (or the 🎲 Randomize button) to customize or auto-generate a skin.")
 
-# ─── Utility: random hex color ──────────────────────────────────────────────
+# Utility: random hex color
 def random_color():
     return "#%06x" % random.randint(0, 0xFFFFFF)
 
@@ -144,9 +85,9 @@ def init_random():
             st.session_state[f"{name}_fill"]     = random.choice(["Solid","Linear","Radial"])
             st.session_state[f"{name}_c1"]       = random_color()
             st.session_state[f"{name}_c2"]       = random_color()
-            st.session_state[f"{name}_pat"]      = random.choice([
-                "None","Stripes","Spots","Diagonal Stripes","Checkerboard","Custom"
-            ])
+            st.session_state[f"{name}_pat"]      = random.choice(
+                ["None","Stripes","Spots","Diagonal Stripes","Checkerboard","Custom"]
+            )
             st.session_state[f"{name}_pc"]       = random_color()
             st.session_state[f"{name}_stripe_w"] = random.randint(5,50)
             st.session_state[f"{name}_dot_r"]    = random.randint(5,30)
@@ -204,12 +145,12 @@ with st.sidebar:
     st.markdown("---")
     bg_file = st.file_uploader("Optional background (PNG)", type="png")
 
-# ─── Load optional background ───────────────────────────────────────────────
+# Load optional background
 bg_img = None
 if bg_file:
     bg_img = Image.open(bg_file).convert("RGBA").resize((1024,1024), Image.Resampling.LANCZOS)
 
-# ─── Build and draw canvas ─────────────────────────────────────────────────
+# Build and draw canvas
 canvas = Image.new("RGBA", (1024,1024), (0,0,0,0))
 for data, center, r in [
     (bp_data, (512,512+by),       240),
@@ -256,16 +197,16 @@ for data, center, r in [
         outline=oc, width=ow
     )
 
-# ─── Composite background underneath ───────────────────────────────────────
+# Composite background underneath
 if bg_img:
     canvas = Image.alpha_composite(bg_img, canvas)
 
-# ─── Preview ────────────────────────────────────────────────────────────────
+# Preview
 ps = st.selectbox("Preview size", [320,400,512], index=0)
 st.subheader("Preview")
 st.image(canvas.resize((ps, ps), Image.Resampling.LANCZOS))
 
-# ─── Prepare JSON config (no file objects) ─────────────────────────────────
+# Prepare JSON config (no file objects)
 config = {}
 for name, data in [("Backpack", bp_data), ("Body", bd_data), ("Hands", hd_data)]:
     f, c1, c2, p, pc, sw, dr, sp, dw, bl, up_f, alpha = data
@@ -293,7 +234,7 @@ st.download_button(
     mime="application/json"
 )
 
-# ─── Download Skin in multiple formats ─────────────────────────────────────
+# Download Skin in multiple formats
 dr = st.selectbox("Download resolution", [256,512,1024], index=1)
 fm = st.selectbox("File format", ["PNG","JPEG","SVG"], index=0)
 out_img = canvas.resize((dr, dr), Image.Resampling.LANCZOS)
