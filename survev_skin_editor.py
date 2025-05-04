@@ -96,8 +96,8 @@ with st.sidebar:
 
     st.markdown("---")
     st.header("Outline & Position")
-    outline_color = st.color_picker("Outline color", "#000000")
-    outline_width = st.slider("Outline width", 0, 50, 10)
+    outline_color     = st.color_picker("Outline color", "#000000")
+    outline_width     = st.slider("Outline width", 0, 50, 10)
     backpack_offset_y = st.slider("Backpack Y offset", -300, 300, -150)
     hand_offset_x     = st.slider("Hands X offset", 0, 300, 180)
     hand_offset_y     = st.slider("Hands Y offset", 0, 300, 220)
@@ -112,10 +112,8 @@ if uploaded_file:
 
 # --- Build canvas ---
 canvas = Image.new("RGBA", (1024,1024), (0,0,0,0))
-draw = ImageDraw.Draw(canvas)
 
 parts = [
-    # (fill, c1, c2, pattern, custom, center, radius)
     (bp_fill, bp_c1, bp_c2, bp_pattern, bp_custom, (512,512+backpack_offset_y), 240),
     (bd_fill, bd_c1, bd_c2, bd_pattern, bd_custom, (512,512),               280),
     (h_fill,  h_c1,  h_c2,  h_pattern,  h_custom,  (512-hand_offset_x,512+hand_offset_y), 100),
@@ -123,28 +121,39 @@ parts = [
 ]
 
 for fill_type, c1, c2, pat, custom, center, r in parts:
-    # 1) base fill (solid/gradient)
+    # 1) Base fill
     fill_img = get_fill_image(fill_type, c1, c2 or c1, 2*r)
 
-    # 2) overlay pattern (if any)…
+    # 2) Overlay pattern if selected
     if pat != "None":
-        # … your pattern logic that composites onto fill_img …
+        if pat == "Stripes":
+            pattern = make_stripes(2*r, c1, c2 or c1)
+        elif pat == "Spots":
+            pattern = make_spots(2*r, c1, c2 or c1)
+        else:  # Custom
+            pattern = (Image.open(custom).convert("RGBA")
+                          .resize((2*r,2*r), Image.Resampling.LANCZOS))
+        # Mask & composite onto fill_img
+        mask = Image.new("L", (2*r,2*r), 0)
+        ImageDraw.Draw(mask).ellipse((0,0,2*r,2*r), fill=255)
+        fill_img = Image.composite(pattern, fill_img, mask)
 
-    # 3) build the circle‐shaped mask _always_
+    # 3) Create the circular mask (always)
     mask = Image.new("L", (2*r, 2*r), 0)
     mdraw = ImageDraw.Draw(mask)
     mdraw.ellipse((0, 0, 2*r, 2*r), fill=255)
 
-    # 4) paste your filled circle onto the canvas with that mask
+    # 4) Paste into canvas
     canvas.paste(fill_img, (center[0]-r, center[1]-r), mask)
 
-    # 5) draw the outline
+    # 5) Draw outline
     ImageDraw.Draw(canvas).ellipse(
         (center[0]-r, center[1]-r, center[0]+r, center[1]+r),
-        outline=outline_color, width=outline_width
+        outline=outline_color,
+        width=outline_width
     )
 
-# 5) composite background underneath
+# 6) Composite background underneath
 if bg:
     canvas = Image.alpha_composite(bg, canvas)
 
