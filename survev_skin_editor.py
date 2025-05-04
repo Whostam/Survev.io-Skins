@@ -11,11 +11,14 @@ if dark_mode:
     page_bg    = "#2e2e2e"
     text_col   = "#FFFFFF"
     sidebar_bg = "#2e2e2e"
+    button_bg  = "#3a3a3a"
 else:
     page_bg    = "#FFFFFF"
     text_col   = "#000000"
     sidebar_bg = "#FFFFFF"
+    button_bg  = "#e0e0e0"
 
+# ─── Global CSS overrides ───────────────────────────────────────────────────
 st.markdown(
     f"""
     <style>
@@ -29,7 +32,6 @@ st.markdown(
         background-color: {sidebar_bg} !important;
         color: {text_col} !important;
     }}
-    /* Ensure all sidebar elements inherit text color */
     [data-testid="stSidebar"] * {{
         color: {text_col} !important;
     }}
@@ -37,9 +39,27 @@ st.markdown(
     .css-18e3th9, .stText, .stMarkdown {{
         color: {text_col} !important;
     }}
+    /* Header / Toolbar background */
+    header, [data-testid="stToolbar"] {{
+        background-color: {sidebar_bg} !important;
+    }}
+    /* Button styling */
+    button, .stButton>button {{
+        background-color: {button_bg} !important;
+        color: {text_col} !important;
+        border-color: {text_col} !important;
+    }}
+    button:hover, .stButton>button:hover {{
+        background-color: {page_bg}33 !important;
+    }}
+    /* Dropdown menus */
+    div[role="listbox"] {{
+        background-color: {sidebar_bg} !important;
+        color: {text_col} !important;
+    }}
     </style>
     """,
-    unsafe_allow_html=True,
+    unsafe_allow_html=True
 )
 
 # ─── Title & Description ───────────────────────────────────────────────────
@@ -124,9 +144,9 @@ def init_random():
             st.session_state[f"{name}_fill"]     = random.choice(["Solid","Linear","Radial"])
             st.session_state[f"{name}_c1"]       = random_color()
             st.session_state[f"{name}_c2"]       = random_color()
-            st.session_state[f"{name}_pat"]      = random.choice(
-                ["None","Stripes","Spots","Diagonal Stripes","Checkerboard","Custom"]
-            )
+            st.session_state[f"{name}_pat"]      = random.choice([
+                "None","Stripes","Spots","Diagonal Stripes","Checkerboard","Custom"
+            ])
             st.session_state[f"{name}_pc"]       = random_color()
             st.session_state[f"{name}_stripe_w"] = random.randint(5,50)
             st.session_state[f"{name}_dot_r"]    = random.randint(5,30)
