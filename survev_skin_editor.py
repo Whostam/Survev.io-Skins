@@ -169,11 +169,12 @@ for data, center, r in [
         # Apply pattern with opacity
     if pattern:
         # adjust alpha channel based on opacity slider
-        orig_alpha = pattern.split()[3]
-        alpha_mask = orig_alpha.point(lambda px: int(px * alpha))
+        pattern = pattern.copy()
+        alpha_mask = pattern.split()[3].point(lambda px: int(px * alpha))
         pattern.putalpha(alpha_mask)
-        # paste the pattern onto the fill, preserving gradient where transparent
-        fill_img.paste(pattern, (0, 0), pattern)
+        # composite pattern over fill
+        fill_img = Image.alpha_composite(fill_img, pattern)
+, pattern)
 
     # Paste to canvas
     mask = Image.new("L", (2*r, 2*r), 0)
