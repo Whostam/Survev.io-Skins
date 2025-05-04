@@ -126,28 +126,22 @@ for fill_type, c1, c2, pat, custom, center, r in parts:
     # 1) base fill (solid/gradient)
     fill_img = get_fill_image(fill_type, c1, c2 or c1, 2*r)
 
-    # 2) overlay pattern
+    # 2) overlay pattern (if any)…
     if pat != "None":
-        if pat == "Stripes":
-            pattern = make_stripes(2*r, c1, c2 or c1)
-        elif pat == "Spots":
-            pattern = make_spots(2*r, c1, c2 or c1)
-        else:  # Custom
-            pattern = (Image.open(custom).convert("RGBA")
-                          .resize((2*r,2*r), Image.Resampling.LANCZOS))
-        # mask & composite
-        mask = Image.new("L", (2*r,2*r), 0)
-        ImageDraw.Draw(mask).ellipse((0,0,2*r,2*r), fill=255)
-        fill_img = Image.composite(pattern, fill_img, mask)
+        # … your pattern logic that composites onto fill_img …
 
-    # 3) paste to canvas
+    # 3) build the circle‐shaped mask _always_
+    mask = Image.new("L", (2*r, 2*r), 0)
+    mdraw = ImageDraw.Draw(mask)
+    mdraw.ellipse((0, 0, 2*r, 2*r), fill=255)
+
+    # 4) paste your filled circle onto the canvas with that mask
     canvas.paste(fill_img, (center[0]-r, center[1]-r), mask)
 
-    # 4) outline
+    # 5) draw the outline
     ImageDraw.Draw(canvas).ellipse(
         (center[0]-r, center[1]-r, center[0]+r, center[1]+r),
-        outline=outline_color,
-        width=outline_width
+        outline=outline_color, width=outline_width
     )
 
 # 5) composite background underneath
