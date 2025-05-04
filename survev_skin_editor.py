@@ -4,32 +4,49 @@ from PIL import Image, ImageDraw
 st.set_page_config(page_title="Survev.io Skin Editor", layout="centered")
 
 st.title("🎨 Survev.io Skin Editor")
-st.write("Customize your own Survev.io skin!")
+st.write("Customize your own skin using the layout: Backpack → Body → Hands")
 
 # --- Color selectors ---
-body_color = st.color_picker("Choose body color", "#F5D0A0")
-pattern_color = st.color_picker("Choose pattern color", "#A05200")
-eye_color = st.color_picker("Choose eye color", "#000000")
+backpack_color = st.color_picker("Backpack color", "#A0522D")
+body_color = st.color_picker("Body color", "#FFD39F")
+hands_color = st.color_picker("Hands color", "#A0522D")
 
-# --- Load empty base skin (placeholder) ---
-base_img = Image.new("RGBA", (256, 256), (0, 0, 0, 0))
-draw = ImageDraw.Draw(base_img)
+# Create canvas
+canvas_size = 256
+img = Image.new("RGBA", (canvas_size, canvas_size), (0, 0, 0, 0))
+draw = ImageDraw.Draw(img)
 
-# --- Draw skin components (simplified placeholder) ---
-# Body
-draw.ellipse((56, 56, 200, 200), fill=body_color)
+# --- Sizes and positions ---
+center = canvas_size // 2
+body_radius = 70
+backpack_radius = 60
+hand_radius = 25
 
-# Pattern (simulate a central patch)
-draw.polygon([(128, 90), (140, 110), (130, 140), (110, 130), (105, 110)], fill=pattern_color)
+# --- Coordinates ---
+# Backpack (behind body, slightly above)
+backpack_center = (center, center - 30)
+# Body (center)
+body_center = (center, center)
+# Hands (bottom left & right of body)
+hand_offset_y = 50
+hand_offset_x = 40
+left_hand_center = (center - hand_offset_x, center + hand_offset_y)
+right_hand_center = (center + hand_offset_x, center + hand_offset_y)
 
-# Eyes
-draw.ellipse((85, 155, 105, 175), fill=eye_color)
-draw.ellipse((150, 155, 170, 175), fill=eye_color)
+def draw_circle(center, radius, color):
+    x, y = center
+    return draw.ellipse((x - radius, y - radius, x + radius, y + radius), fill=color)
+
+# --- Draw the parts in correct layer order ---
+draw_circle(backpack_center, backpack_radius, backpack_color)  # Backpack (bottom layer)
+draw_circle(body_center, body_radius, body_color)              # Body (middle layer)
+draw_circle(left_hand_center, hand_radius, hands_color)        # Hands (top layer)
+draw_circle(right_hand_center, hand_radius, hands_color)
 
 # --- Show preview ---
 st.subheader("Skin Preview")
-st.image(base_img, use_column_width=True)
+st.image(img, use_column_width=True)
 
 # --- Download button ---
-img_download = base_img.convert("RGB")
-st.download_button("Download Skin", data=img_download.tobytes(), file_name="custom_skin.png", mime="image/png")
+img_download = img.convert("RGB")
+st.download_button("Download Skin", data=img_download.tobytes(), file_name="survev_skin.png", mime="image/png")
