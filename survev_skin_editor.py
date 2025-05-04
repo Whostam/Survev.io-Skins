@@ -56,11 +56,17 @@ display_img = img.resize((256, 256), Image.Resampling.LANCZOS)
 st.subheader("Skin Preview")
 st.image(display_img)
 
-# --- Download option ---
-download_img = img.resize((512, 512), Image.Resampling.LANCZOS).convert("RGB")
+import io
+
+# --- Prepare valid PNG in memory ---
+buffer = io.BytesIO()
+download_img.save(buffer, format="PNG")
+buffer.seek(0)
+
+# --- Download button with valid PNG ---
 st.download_button(
     "Download Skin",
-    data=download_img.tobytes(),
+    data=buffer,
     file_name="survev_skin.png",
     mime="image/png"
 )
