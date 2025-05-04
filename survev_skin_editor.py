@@ -197,19 +197,25 @@ st.subheader("Preview")
 st.image(canvas.resize((ps,ps), Image.Resampling.LANCZOS))
 
 # Prepare JSON config
-config = {
-    "Backpack": {"fill":bp_data[0],"c1":bp_data[1],"c2":bp_data[2],"pattern":bp_data[3],
-                 "pattern_color":bp_data[4],"stripe_w":bp_data[5],"dot_r":bp_data[6],
-                 "spacing":bp_data[7],"diag_w":bp_data[8],"block":bp_data[9],"alpha":bp_data[10]},
-    "Body":     {"fill":bd_data[0],"c1":bd_data[1],"c2":bd_data[2],"pattern":bd_data[3],
-                 "pattern_color":bd_data[4],"stripe_w":bd_data[5],"dot_r":bd_data[6],
-                 "spacing":bd_data[7],"diag_w":bd_data[8],"block":bd_data[9],"alpha":bd_data[10]},
-    "Hands":    {"fill":hd_data[0],"c1":hd_data[1],"c2":hd_data[2],"pattern":hd_data[3],
-                 "pattern_color":hd_data[4],"stripe_w":hd_data[5],"dot_r":hd_data[6],
-                 "spacing":hd_data[7],"diag_w":hd_data[8],"block":hd_data[9],"alpha":hd_data[10]},
-    "outline":  {"color":oc,"width":ow},
-    "offsets":  {"backpack_y":by,"hands_x":hx,"hands_y":hy}
-}
+config = {}
+for name, data in [("Backpack", bp_data), ("Body", bd_data), ("Hands", hd_data)]:
+    # unpack, ignoring uploaded file
+    fill, c1, c2, pat, pc, sw, dr, sp, dw, bl, upfile, alpha = data
+    config[name] = {
+        "fill": fill,
+        "c1": c1,
+        "c2": c2,
+        "pattern": pat,
+        "pattern_color": pc,
+        "stripe_w": sw,
+        "dot_r": dr,
+        "spacing": sp,
+        "diag_w": dw,
+        "block": bl,
+        "alpha": alpha
+    }
+config["outline"] = {"color": oc, "width": ow}
+config["offsets"] = {"backpack_y": by, "hands_x": hx, "hands_y": hy}
 json_buf = io.StringIO()
 json.dump(config, json_buf, indent=2)
 json_buf.seek(0)
